@@ -1,0 +1,80 @@
+name: cyclic-peptide-predict
+description: >-
+  Predict the 3D structure of a cyclic peptide (head-to-tail ring and/or disulfide bridges),
+  alone or bound to a protein target, with Boltz-2 (MIT licence). Unnatural amino acids go in
+  by CCD code. Checks the ring really closed and reports it. Prediction only, not design.
+  One GPU job, run through the container wrapper script.
+version: "0.2.0"
+
+runner: slurm
+script_file: predict.sh
+
+needs:
+  gpus: 1                 # one GPU with compute capability >= 7.5 and >= 14 GB
+  cpus: 8
+  mem: 48G
+  # Site settings to add here: your GPU partition (partition: <name>) and any machines whose GPUs are
+  # too small (exclude: [<node>, ...]). Avoid pinning to a single machine.
+
+params:
+  peptide_sequence:
+    type: string
+    required: true
+    description: >-
+      Peptide in one-letter code. Write an unnatural residue as its CCD code in
+      parentheses, e.g. C(DAL)YIQNCPLG. Residues are numbered from 1. 2-100 residues.
+  protein_sequence:
+    type: string
+    description: Optional target protein (one-letter code) for a peptide-protein complex.
+  head_to_tail:
+    type: string
+    default: "false"
+    description: "true | false. Join the N- and C-terminus into a ring."
+  disulfides:
+    type: string
+    description: >-
+      Disulfide bridges as 1-based residue pairs, e.g. "3-11,5-9". Each residue must be C.
+      Give this and/or head_to_tail=true.
+  num_samples:
+    type: integer
+    default: 10
+    description: >-
+      Structure samples to generate (1-50). More samples raise the chance of a closed ring. Large
+      targets fit fewer: up to 30 residues 50, up to 300 residues 10, up to 600 residues 5, up to
+      1050 residues 1. A request that will not fit is refused up front with the number that does.
+  ring_bond_constraint:
+    type: string
+    default: "true"
+    description: >-
+      true | false | force. Add an explicit N-C bond for head-to-tail rings. "force" also adds it
+      when the first or last residue is unnatural (which otherwise often fails to close).
+  use_potentials:
+    type: string
+    default: "false"
+    description: "true | false. Boltz inference-time physical potentials (bond geometry steering)."
+  job_name:
+    type: string
+    description: Label used in output file names.
+
+inputs:
+  - name: target_msa
+    required: false
+    description: Optional A3M alignment for the target protein. Without it the complex is predicted with no MSA, which is less accurate.
+
+outputs:
+  - name: result
+    path: result.json
+    description: Summary, per-model scores, ring-closure checks and warnings.
+  - name: best_model
+    path: best_model.cif
+    description: Best-ranked model whose ring is closed (falls back to best overall, with a warning).
+  - name: samples
+    path: samples
+    description: Every predicted model.
+  - name: boltz_input
+    path: boltz_input.yaml
+    description: The exact Boltz-2 input that was run.
+  - name: log
+    path: run.log
+    description: Full model log.
+

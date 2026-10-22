@@ -7,12 +7,13 @@ alignment building, minimisation, permeability scoring). Prediction only; it doe
 
 ## How it is built
 
-A command-line program, wrapped for running in a container on a GPU machine:
+A command-line program, wrapped for running in a container, with an optional job-manager entry:
 
 | Layer | File | Job |
 |---|---|---|
 | 1. The CLI | `cyclic_tool/` (`python -m cyclic_tool predict --help`) | Validates the request, runs `boltz predict`, measures ring closure, ranks the models, writes the result files, and reports every failure with a clear reason and exit code. Runs anywhere Boltz is installed. |
 | 2. Container wrapper | `cyclic_peptide_predict.sh` | Only what is specific to running on a shared GPU machine: GPU check, image build on first use, container labels, the caller's uid, per-run folders and the result folders. Starts layer 1 in one container. |
+| 3. Job-manager entry (optional) | `jm/` | Manifest, entry script and a usage guide for a manifest-driven job manager. See `jm/README.md`. |
 
 ## Input
 
@@ -65,6 +66,7 @@ A constraint does not guarantee a closed ring, which is why every model is measu
 ```bash
 python -m cyclic_tool predict rgd 'RGD(DPN)V' --head-to-tail true --work-dir work --out-dir outdir   # anywhere Boltz is installed
 CPP_WEIGHTS=/path/to/boltz-cache bash cyclic_peptide_predict.sh oxy CYIQNCPLG --head-to-tail true --disulfides 1-6 --protein target.fasta   # in a container, on a GPU machine
+# job-manager route: see jm/README.md
 ```
 
 ## Size and number of samples (measured)
