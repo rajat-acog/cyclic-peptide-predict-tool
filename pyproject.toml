@@ -1,0 +1,13 @@
+[project]
+name = "cyclic-peptide-predict"
+version = "0.2.0"
+description = "Input validation, ring-closure checks and result packaging around Boltz-2 for cyclic peptides"
+requires-python = ">=3.10"
+dependencies = ["pyyaml"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
